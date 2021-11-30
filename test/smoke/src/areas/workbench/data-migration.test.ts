@@ -5,7 +5,7 @@
 
 import { Application, ApplicationOptions, Quality } from '../../../../automation';
 import { ParsedArgs } from 'minimist';
-import { afterSuite, getRandomUserDataDir, startApp, timeout } from '../../utils';
+import { afterSuite, getRandomUserDataDir, startApp } from '../../utils';
 
 export function setup(opts: ParsedArgs) {
 
@@ -154,8 +154,6 @@ export function setup(opts: ParsedArgs) {
 			await stableApp.workbench.quickaccess.openFile(readmeMd);
 			await stableApp.workbench.editor.waitForTypeInEditor(readmeMd, textToType);
 			await stableApp.workbench.editors.waitForTab(readmeMd, true);
-
-			await timeout(2000); // TODO@bpasero https://github.com/microsoft/vscode/issues/138055
 
 			await stableApp.stop();
 			stableApp = undefined;
