@@ -11,7 +11,7 @@ import { combinedDisposable, Disposable, IDisposable, toDisposable } from 'vs/ba
 import { normalize } from 'vs/base/common/path';
 import { URI } from 'vs/base/common/uri';
 import { IFileChange, IWatchOptions } from 'vs/platform/files/common/files';
-import { AbstractWatcherService, IDiskFileChange, ILogMessage, IWatchRequest, toFileChanges } from 'vs/platform/files/common/watcher';
+import { AbstractRecursiveWatcher, IDiskFileChange, ILogMessage, IWatchRequest, toFileChanges } from 'vs/platform/files/common/watcher';
 import { ILogService, LogLevel } from 'vs/platform/log/common/log';
 
 export abstract class AbstractDiskFileSystemProvider extends Disposable {
@@ -30,7 +30,7 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 	protected readonly _onDidChangeFile = this._register(new Emitter<readonly IFileChange[]>());
 	readonly onDidChangeFile = this._onDidChangeFile.event;
 
-	private recursiveWatcher: AbstractWatcherService | undefined;
+	private recursiveWatcher: AbstractRecursiveWatcher | undefined;
 	private readonly recursiveFoldersToWatch: IWatchRequest[] = [];
 	private recursiveWatchRequestDelayer = this._register(new ThrottledDelayer<void>(0));
 
@@ -90,7 +90,7 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 		return this.doWatch(this.recursiveWatcher, this.recursiveFoldersToWatch);
 	}
 
-	protected doWatch(watcher: AbstractWatcherService, requests: IWatchRequest[]): Promise<void> {
+	protected doWatch(watcher: AbstractRecursiveWatcher, requests: IWatchRequest[]): Promise<void> {
 		return watcher.watch(requests);
 	}
 
@@ -98,10 +98,10 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 		onChange: (changes: IDiskFileChange[]) => void,
 		onLogMessage: (msg: ILogMessage) => void,
 		verboseLogging: boolean
-	): AbstractWatcherService;
+	): AbstractRecursiveWatcher;
 
 	private watchNonRecursive(resource: URI): IDisposable {
-		const watcherService = this.createNonRecursiveWatcher(
+		const watcher = this.createNonRecursiveWatcher(
 			this.toFilePath(resource),
 			changes => this._onDidChangeFile.fire(toFileChanges(changes)),
 			msg => this.onWatcherLogMessage(msg),
@@ -109,10 +109,10 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 		);
 
 		const logLevelListener = this.logService.onDidChangeLogLevel(() => {
-			watcherService.setVerboseLogging(this.logService.getLevel() === LogLevel.Trace);
+			watcher.setVerboseLogging(this.logService.getLevel() === LogLevel.Trace);
 		});
 
-		return combinedDisposable(watcherService, logLevelListener);
+		return combinedDisposable(watcher, logLevelListener);
 	}
 
 	private onWatcherLogMessage(msg: ILogMessage): void {

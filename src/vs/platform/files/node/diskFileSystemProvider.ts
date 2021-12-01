@@ -21,8 +21,8 @@ import { localize } from 'vs/nls';
 import { createFileSystemProviderError, FileDeleteOptions, FileOpenOptions, FileOverwriteOptions, FileReadStreamOptions, FileSystemProviderCapabilities, FileSystemProviderError, FileSystemProviderErrorCode, FileType, FileWriteOptions, IFileSystemProviderWithFileFolderCopyCapability, IFileSystemProviderWithFileReadStreamCapability, IFileSystemProviderWithFileReadWriteCapability, IFileSystemProviderWithOpenReadWriteCloseCapability, isFileOpenForWriteOptions, IStat } from 'vs/platform/files/common/files';
 import { readFileIntoStream } from 'vs/platform/files/common/io';
 import { NodeJSFileWatcher } from 'vs/platform/files/node/watcher/nodejs/nodejsWatcher';
-import { ParcelWatcherService } from 'vs/platform/files/node/watcher/parcel/parcelWatcherService';
-import { AbstractWatcherService, IDiskFileChange, ILogMessage, IWatchRequest } from 'vs/platform/files/common/watcher';
+import { ParcelWatcherClient } from 'vs/platform/files/node/watcher/parcel/parcelWatcherClient';
+import { AbstractRecursiveWatcher, IDiskFileChange, ILogMessage, IWatchRequest } from 'vs/platform/files/common/watcher';
 import { ILogService } from 'vs/platform/log/common/log';
 import { AbstractDiskFileSystemProvider } from 'vs/platform/files/common/diskFileSystemProvider';
 import { toErrorMessage } from 'vs/base/common/errorMessage';
@@ -549,15 +549,15 @@ export class DiskFileSystemProvider extends AbstractDiskFileSystemProvider imple
 		onChange: (changes: IDiskFileChange[]) => void,
 		onLogMessage: (msg: ILogMessage) => void,
 		verboseLogging: boolean
-	): AbstractWatcherService {
-		return new ParcelWatcherService(
+	): AbstractRecursiveWatcher {
+		return new ParcelWatcherClient(
 			changes => onChange(changes),
 			msg => onLogMessage(msg),
 			verboseLogging
 		);
 	}
 
-	protected override doWatch(watcher: AbstractWatcherService, requests: IWatchRequest[]): Promise<void> {
+	protected override doWatch(watcher: AbstractRecursiveWatcher, requests: IWatchRequest[]): Promise<void> {
 		const usePolling = this.options?.watcher?.usePolling;
 		if (usePolling === true) {
 			for (const request of requests) {

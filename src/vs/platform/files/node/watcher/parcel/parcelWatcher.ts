@@ -22,7 +22,7 @@ import { generateUuid } from 'vs/base/common/uuid';
 import { realcaseSync, realpathSync } from 'vs/base/node/extpath';
 import { watchFolder } from 'vs/base/node/watcher';
 import { FileChangeType } from 'vs/platform/files/common/files';
-import { IDiskFileChange, ILogMessage, coalesceEvents, IWatchRequest, IWatcherService } from 'vs/platform/files/common/watcher';
+import { IDiskFileChange, ILogMessage, coalesceEvents, IWatchRequest, IRecursiveWatcher } from 'vs/platform/files/common/watcher';
 
 export interface IWatcher {
 
@@ -54,7 +54,7 @@ export interface IWatcher {
 	stop(): Promise<void>;
 }
 
-export class ParcelWatcher extends Disposable implements IWatcherService {
+export class ParcelWatcher extends Disposable implements IRecursiveWatcher {
 
 	private static readonly MAP_PARCEL_WATCHER_ACTION_TO_FILE_CHANGE = new Map<parcelWatcher.EventType, number>(
 		[

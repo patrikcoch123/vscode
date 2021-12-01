@@ -5,10 +5,10 @@
 
 import { DisposableStore, toDisposable } from 'vs/base/common/lifecycle';
 import { getDelayedChannel, ProxyChannel } from 'vs/base/parts/ipc/common/ipc';
-import { AbstractWatcherService, IDiskFileChange, ILogMessage, IWatcherService } from 'vs/platform/files/common/watcher';
+import { AbstractRecursiveWatcher, IDiskFileChange, ILogMessage, IRecursiveWatcher } from 'vs/platform/files/common/watcher';
 import { ISharedProcessWorkerWorkbenchService } from 'vs/workbench/services/sharedProcess/electron-sandbox/sharedProcessWorkerWorkbenchService';
 
-export class ParcelFileWatcher extends AbstractWatcherService {
+export class ParcelWatcherClient extends AbstractRecursiveWatcher {
 
 	constructor(
 		onFileChanges: (changes: IDiskFileChange[]) => void,
@@ -21,8 +21,8 @@ export class ParcelFileWatcher extends AbstractWatcherService {
 		this.init();
 	}
 
-	protected override createService(disposables: DisposableStore): IWatcherService {
-		const service = ProxyChannel.toService<IWatcherService>(getDelayedChannel((async () => {
+	protected override createWatcher(disposables: DisposableStore): IRecursiveWatcher {
+		const watcher = ProxyChannel.toService<IRecursiveWatcher>(getDelayedChannel((async () => {
 
 			// Acquire parcel watcher via shared process worker
 			//
@@ -34,7 +34,7 @@ export class ParcelFileWatcher extends AbstractWatcherService {
 			// the process automatically when the window closes or reloads.
 			const { client, onDidTerminate } = await this.sharedProcessWorkerWorkbenchService.createWorker({
 				moduleId: 'vs/platform/files/node/watcher/parcel/parcelWatcherMain',
-				type: 'watcherServiceParcelSharedProcess'
+				type: 'parcelWatcher'
 			});
 
 			// React on unexpected termination of the watcher process
@@ -54,8 +54,8 @@ export class ParcelFileWatcher extends AbstractWatcherService {
 		// only seem to be happening when used from Electron,
 		// not pure node.js.
 		// https://github.com/microsoft/vscode/issues/136264
-		disposables.add(toDisposable(() => service.stop()));
+		disposables.add(toDisposable(() => watcher.stop()));
 
-		return service;
+		return watcher;
 	}
 }
