@@ -33,7 +33,7 @@ export class ParcelFileWatcher extends AbstractWatcherService {
 			// The shared process worker services ensures to terminate
 			// the process automatically when the window closes or reloads.
 			const { client, onDidTerminate } = await this.sharedProcessWorkerWorkbenchService.createWorker({
-				moduleId: 'vs/platform/files/node/watcher/parcel/watcherApp',
+				moduleId: 'vs/platform/files/node/watcher/parcel/parcelWatcherMain',
 				type: 'watcherServiceParcelSharedProcess'
 			});
 

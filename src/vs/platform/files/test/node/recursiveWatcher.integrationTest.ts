@@ -12,12 +12,12 @@ import { isLinux, isMacintosh, isWindows } from 'vs/base/common/platform';
 import { Promises, RimRafMode } from 'vs/base/node/pfs';
 import { flakySuite, getPathFromAmdModule, getRandomTestPath } from 'vs/base/test/node/testUtils';
 import { FileChangeType } from 'vs/platform/files/common/files';
-import { IWatcher, ParcelWatcherService } from 'vs/platform/files/node/watcher/parcel/parcelWatcherService';
+import { IWatcher, ParcelWatcher } from 'vs/platform/files/node/watcher/parcel/parcelWatcher';
 import { IWatchRequest } from 'vs/platform/files/common/watcher';
 
 flakySuite('Recursive Watcher (parcel)', () => {
 
-	class TestParcelWatcherService extends ParcelWatcherService {
+	class TestParcelWatcherService extends ParcelWatcher {
 
 		testNormalizePaths(paths: string[]): string[] {
 
