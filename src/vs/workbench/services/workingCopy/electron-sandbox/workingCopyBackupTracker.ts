@@ -215,6 +215,11 @@ export class NativeWorkingCopyBackupTracker extends WorkingCopyBackupTracker imp
 
 					// Backup does not exist
 					else {
+
+						// Cancel any pending
+						this.cancelBackup(workingCopy);
+
+						// Start new
 						const backup = await workingCopy.backup(token);
 						await this.workingCopyBackupService.backup(workingCopy, backup.content, contentVersion, backup.meta, token);
 

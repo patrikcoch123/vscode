@@ -159,6 +159,10 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 			}
 
 			if (cts.token.isCancellationRequested) {
+				// Return early and do not delete the pending
+				// backup: chances are that another pending
+				// backup was recorded and we don't want to
+				// tamper with that.
 				return;
 			}
 
@@ -199,7 +203,7 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 		this.workingCopyBackupService.discardBackup(workingCopy);
 	}
 
-	private cancelBackup(workingCopy: IWorkingCopy): void {
+	protected cancelBackup(workingCopy: IWorkingCopy): void {
 		dispose(this.pendingBackups.get(workingCopy));
 		this.pendingBackups.delete(workingCopy);
 	}
