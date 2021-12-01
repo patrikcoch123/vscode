@@ -21,7 +21,6 @@ import { localize } from 'vs/nls';
 import { createFileSystemProviderError, FileDeleteOptions, FileOpenOptions, FileOverwriteOptions, FileReadStreamOptions, FileSystemProviderCapabilities, FileSystemProviderError, FileSystemProviderErrorCode, FileType, FileWriteOptions, IFileSystemProviderWithFileFolderCopyCapability, IFileSystemProviderWithFileReadStreamCapability, IFileSystemProviderWithFileReadWriteCapability, IFileSystemProviderWithOpenReadWriteCloseCapability, isFileOpenForWriteOptions, IStat } from 'vs/platform/files/common/files';
 import { readFileIntoStream } from 'vs/platform/files/common/io';
 import { FileWatcher as NodeJSWatcherService } from 'vs/platform/files/node/watcher/nodejs/watcherService';
-import { FileWatcher as NsfwWatcherService } from 'vs/platform/files/node/watcher/nsfw/watcherService';
 import { FileWatcher as ParcelWatcherService } from 'vs/platform/files/node/watcher/parcel/watcherService';
 import { IDiskFileChange, ILogMessage, IWatchRequest, WatcherService } from 'vs/platform/files/common/watcher';
 import { ILogService } from 'vs/platform/log/common/log';
@@ -63,7 +62,6 @@ export interface IWatcherOptions {
 
 export interface IDiskFileSystemProviderOptions {
 	watcher?: IWatcherOptions;
-	legacyWatcher?: string;
 }
 
 export class DiskFileSystemProvider extends AbstractDiskFileSystemProvider implements
@@ -552,33 +550,10 @@ export class DiskFileSystemProvider extends AbstractDiskFileSystemProvider imple
 		onLogMessage: (msg: ILogMessage) => void,
 		verboseLogging: boolean
 	): WatcherService {
-		let watcherImpl: {
-			new(
-				onChange: (changes: IDiskFileChange[]) => void,
-				onLogMessage: (msg: ILogMessage) => void,
-				verboseLogging: boolean,
-				watcherOptions?: IWatcherOptions
-			): WatcherService
-		};
-
-		let enableLegacyWatcher = false;
-		if (this.options?.watcher?.usePolling) {
-			enableLegacyWatcher = false; // must use Parcel watcher for when polling is required
-		} else {
-			enableLegacyWatcher = this.options?.legacyWatcher === 'on'; // setting always wins
-		}
-
-		if (enableLegacyWatcher) {
-			watcherImpl = NsfwWatcherService;
-		} else {
-			watcherImpl = ParcelWatcherService;
-		}
-
-		return new watcherImpl(
+		return new ParcelWatcherService(
 			changes => onChange(changes),
 			msg => onLogMessage(msg),
-			verboseLogging,
-			this.options?.watcher
+			verboseLogging
 		);
 	}
 
