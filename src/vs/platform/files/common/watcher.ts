@@ -131,24 +131,6 @@ export abstract class AbstractWatcherService extends Disposable {
 	}
 }
 
-/**
- * Base class of any watcher service we support.
- *
- * TODO@bpasero delete and replace with `AbstractWatcherService`
- */
-export abstract class WatcherService extends Disposable {
-
-	/**
-	 * Asks to watch the provided folders.
-	 */
-	abstract watch(requests: IWatchRequest[]): Promise<void>;
-
-	/**
-	 * Enable verbose logging from the watcher.
-	 */
-	abstract setVerboseLogging(verboseLogging: boolean): Promise<void>;
-}
-
 export interface IWatchRequest {
 
 	/**

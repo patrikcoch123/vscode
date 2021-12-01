@@ -22,7 +22,7 @@ import { createFileSystemProviderError, FileDeleteOptions, FileOpenOptions, File
 import { readFileIntoStream } from 'vs/platform/files/common/io';
 import { FileWatcher as NodeJSWatcherService } from 'vs/platform/files/node/watcher/nodejs/watcherService';
 import { FileWatcher as ParcelWatcherService } from 'vs/platform/files/node/watcher/parcel/watcherService';
-import { IDiskFileChange, ILogMessage, IWatchRequest, WatcherService } from 'vs/platform/files/common/watcher';
+import { AbstractWatcherService, IDiskFileChange, ILogMessage, IWatchRequest } from 'vs/platform/files/common/watcher';
 import { ILogService } from 'vs/platform/log/common/log';
 import { AbstractDiskFileSystemProvider } from 'vs/platform/files/common/diskFileSystemProvider';
 import { toErrorMessage } from 'vs/base/common/errorMessage';
@@ -549,7 +549,7 @@ export class DiskFileSystemProvider extends AbstractDiskFileSystemProvider imple
 		onChange: (changes: IDiskFileChange[]) => void,
 		onLogMessage: (msg: ILogMessage) => void,
 		verboseLogging: boolean
-	): WatcherService {
+	): AbstractWatcherService {
 		return new ParcelWatcherService(
 			changes => onChange(changes),
 			msg => onLogMessage(msg),
@@ -557,7 +557,7 @@ export class DiskFileSystemProvider extends AbstractDiskFileSystemProvider imple
 		);
 	}
 
-	protected override doWatch(watcher: WatcherService, requests: IWatchRequest[]): Promise<void> {
+	protected override doWatch(watcher: AbstractWatcherService, requests: IWatchRequest[]): Promise<void> {
 		const usePolling = this.options?.watcher?.usePolling;
 		if (usePolling === true) {
 			for (const request of requests) {
