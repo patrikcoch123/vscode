@@ -7,8 +7,7 @@ import { INativeWorkbenchConfiguration } from 'vs/workbench/services/environment
 import { ILogService } from 'vs/platform/log/common/log';
 import { Schemas } from 'vs/base/common/network';
 import { IFileService } from 'vs/platform/files/common/files';
-import { DiskFileSystemProvider as ElectronFileSystemProvider } from 'vs/workbench/services/files/electron-browser/diskFileSystemProvider';
-import { DiskFileSystemProvider as SandboxedDiskFileSystemProvider } from 'vs/workbench/services/files/electron-sandbox/diskFileSystemProvider';
+import { DiskFileSystemProvider } from 'vs/workbench/services/files/electron-sandbox/diskFileSystemProvider';
 import { FileUserDataProvider } from 'vs/workbench/services/userData/common/fileUserDataProvider';
 import { INativeHostService } from 'vs/platform/native/electron-sandbox/native';
 import { SharedDesktopMain } from 'vs/workbench/electron-sandbox/shared.desktop.main';
@@ -26,13 +25,7 @@ class DesktopMain extends SharedDesktopMain {
 	): void {
 
 		// Local Files
-		let diskFileSystemProvider: ElectronFileSystemProvider | SandboxedDiskFileSystemProvider;
-		if (this.configuration.experimentalSandboxedFileService !== false) {
-			diskFileSystemProvider = this._register(new SandboxedDiskFileSystemProvider(mainProcessService, sharedProcessWorkerWorkbenchService, logService));
-		} else {
-			logService.info('[FileService]: NOT using sandbox ready file system provider');
-			diskFileSystemProvider = this._register(new ElectronFileSystemProvider(logService, nativeHostService, { legacyWatcher: this.configuration.legacyWatcher }));
-		}
+		const diskFileSystemProvider = this._register(new DiskFileSystemProvider(mainProcessService, sharedProcessWorkerWorkbenchService, logService));
 		fileService.registerProvider(Schemas.file, diskFileSystemProvider);
 
 		// User Data Provider
