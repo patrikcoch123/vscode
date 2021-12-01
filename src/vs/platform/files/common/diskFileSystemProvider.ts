@@ -24,11 +24,11 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 
 	//#region File Watching
 
-	protected readonly _onDidErrorOccur = this._register(new Emitter<string>());
-	readonly onDidErrorOccur = this._onDidErrorOccur.event;
-
 	protected readonly _onDidChangeFile = this._register(new Emitter<readonly IFileChange[]>());
 	readonly onDidChangeFile = this._onDidChangeFile.event;
+
+	protected readonly _onDidWatchError = this._register(new Emitter<string>());
+	readonly onDidWatchError = this._onDidWatchError.event;
 
 	private recursiveWatcher: AbstractRecursiveWatcherClient | undefined;
 	private readonly recursiveFoldersToWatch: IWatchRequest[] = [];
@@ -117,7 +117,7 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 
 	private onWatcherLogMessage(msg: ILogMessage): void {
 		if (msg.type === 'error') {
-			this._onDidErrorOccur.fire(msg.message);
+			this._onDidWatchError.fire(msg.message);
 		}
 
 		this.logService[msg.type](msg.message);
