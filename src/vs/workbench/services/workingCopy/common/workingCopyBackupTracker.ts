@@ -203,9 +203,17 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 		this.workingCopyBackupService.discardBackup(workingCopy);
 	}
 
-	protected cancelBackup(workingCopy: IWorkingCopy): void {
+	private cancelBackup(workingCopy: IWorkingCopy): void {
 		dispose(this.pendingBackups.get(workingCopy));
 		this.pendingBackups.delete(workingCopy);
+	}
+
+	protected cancelBackups(): void {
+		for (const [workingCopy] of this.pendingBackups) {
+			dispose(this.pendingBackups.get(workingCopy));
+		}
+
+		this.pendingBackups.clear();
 	}
 
 	protected abstract onBeforeShutdown(reason: ShutdownReason): boolean | Promise<boolean>;

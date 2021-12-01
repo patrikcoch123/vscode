@@ -50,6 +50,14 @@ export class NativeWorkingCopyBackupTracker extends WorkingCopyBackupTracker imp
 
 	protected onBeforeShutdown(reason: ShutdownReason): boolean | Promise<boolean> {
 
+		// Important: we are about to shutdown and handle dirty working copies
+		// and backups. We do not want any pending backups to interfer with this
+		// because there is a risk of a backup being scheduled after we have
+		// acknowledged to shutdown and then might end up with partial backups
+		// written to disk, or even empty backups
+		// (https://github.com/microsoft/vscode/issues/138055)
+		this.cancelBackups();
+
 		// Dirty working copies need treatment on shutdown
 		const dirtyWorkingCopies = this.workingCopyService.dirtyWorkingCopies;
 		if (dirtyWorkingCopies.length) {
@@ -215,13 +223,15 @@ export class NativeWorkingCopyBackupTracker extends WorkingCopyBackupTracker imp
 
 					// Backup does not exist
 					else {
-
-						// Cancel any pending
-						this.cancelBackup(workingCopy);
-
-						// Start new
 						const backup = await workingCopy.backup(token);
+						if (token.isCancellationRequested) {
+							return;
+						}
+
 						await this.workingCopyBackupService.backup(workingCopy, backup.content, contentVersion, backup.meta, token);
+						if (token.isCancellationRequested) {
+							return;
+						}
 
 						backups.push(workingCopy);
 					}
