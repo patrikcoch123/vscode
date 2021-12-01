@@ -11,7 +11,7 @@ import { combinedDisposable, Disposable, IDisposable, toDisposable } from 'vs/ba
 import { normalize } from 'vs/base/common/path';
 import { URI } from 'vs/base/common/uri';
 import { IFileChange, IWatchOptions } from 'vs/platform/files/common/files';
-import { AbstractRecursiveWatcher, IDiskFileChange, ILogMessage, IWatchRequest, toFileChanges } from 'vs/platform/files/common/watcher';
+import { AbstractRecursiveWatcherClient, IDiskFileChange, ILogMessage, IWatchRequest, toFileChanges } from 'vs/platform/files/common/watcher';
 import { ILogService, LogLevel } from 'vs/platform/log/common/log';
 
 export abstract class AbstractDiskFileSystemProvider extends Disposable {
@@ -30,7 +30,7 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 	protected readonly _onDidChangeFile = this._register(new Emitter<readonly IFileChange[]>());
 	readonly onDidChangeFile = this._onDidChangeFile.event;
 
-	private recursiveWatcher: AbstractRecursiveWatcher | undefined;
+	private recursiveWatcher: AbstractRecursiveWatcherClient | undefined;
 	private readonly recursiveFoldersToWatch: IWatchRequest[] = [];
 	private recursiveWatchRequestDelayer = this._register(new ThrottledDelayer<void>(0));
 
@@ -90,7 +90,7 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 		return this.doWatch(this.recursiveWatcher, this.recursiveFoldersToWatch);
 	}
 
-	protected doWatch(watcher: AbstractRecursiveWatcher, requests: IWatchRequest[]): Promise<void> {
+	protected doWatch(watcher: AbstractRecursiveWatcherClient, requests: IWatchRequest[]): Promise<void> {
 		return watcher.watch(requests);
 	}
 
@@ -98,7 +98,7 @@ export abstract class AbstractDiskFileSystemProvider extends Disposable {
 		onChange: (changes: IDiskFileChange[]) => void,
 		onLogMessage: (msg: ILogMessage) => void,
 		verboseLogging: boolean
-	): AbstractRecursiveWatcher;
+	): AbstractRecursiveWatcherClient;
 
 	private watchNonRecursive(resource: URI): IDisposable {
 		const watcher = this.createNonRecursiveWatcher(

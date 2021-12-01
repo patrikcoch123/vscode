@@ -12,7 +12,7 @@ import { isLinux, isMacintosh, isWindows } from 'vs/base/common/platform';
 import { Promises, RimRafMode } from 'vs/base/node/pfs';
 import { flakySuite, getPathFromAmdModule, getRandomTestPath } from 'vs/base/test/node/testUtils';
 import { FileChangeType } from 'vs/platform/files/common/files';
-import { IWatcher, ParcelWatcher } from 'vs/platform/files/node/watcher/parcel/parcelWatcher';
+import { IParcelWatcherInstance, ParcelWatcher } from 'vs/platform/files/node/watcher/parcel/parcelWatcher';
 import { IWatchRequest } from 'vs/platform/files/common/watcher';
 
 flakySuite('Recursive Watcher (parcel)', () => {
@@ -44,7 +44,7 @@ flakySuite('Recursive Watcher (parcel)', () => {
 			return super.toExcludePaths(path, excludes);
 		}
 
-		override  restartWatching(watcher: IWatcher, delay = 10): void {
+		override  restartWatching(watcher: IParcelWatcherInstance, delay = 10): void {
 			return super.restartWatching(watcher, delay);
 		}
 	}

@@ -7,9 +7,9 @@ import { DisposableStore } from 'vs/base/common/lifecycle';
 import { FileAccess } from 'vs/base/common/network';
 import { getNextTickChannel, ProxyChannel } from 'vs/base/parts/ipc/common/ipc';
 import { Client } from 'vs/base/parts/ipc/node/ipc.cp';
-import { AbstractRecursiveWatcher, IDiskFileChange, ILogMessage, IRecursiveWatcher } from 'vs/platform/files/common/watcher';
+import { AbstractRecursiveWatcherClient, IDiskFileChange, ILogMessage, IRecursiveWatcher } from 'vs/platform/files/common/watcher';
 
-export class ParcelWatcherClient extends AbstractRecursiveWatcher {
+export class ParcelWatcherClient extends AbstractRecursiveWatcherClient {
 
 	constructor(
 		onFileChanges: (changes: IDiskFileChange[]) => void,

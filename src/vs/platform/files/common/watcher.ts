@@ -48,7 +48,7 @@ export interface IRecursiveWatcher {
 	stop(): Promise<void>;
 }
 
-export abstract class AbstractRecursiveWatcher extends Disposable {
+export abstract class AbstractRecursiveWatcherClient extends Disposable {
 
 	private static readonly MAX_RESTARTS = 5;
 
@@ -88,7 +88,7 @@ export abstract class AbstractRecursiveWatcher extends Disposable {
 	protected onError(error: string): void {
 
 		// Restart up to N times
-		if (this.restartCounter < AbstractRecursiveWatcher.MAX_RESTARTS && this.requests) {
+		if (this.restartCounter < AbstractRecursiveWatcherClient.MAX_RESTARTS && this.requests) {
 			this.error(`restarting watcher after error: ${error}`);
 			this.restart(this.requests);
 		}

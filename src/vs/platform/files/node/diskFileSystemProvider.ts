@@ -22,7 +22,7 @@ import { createFileSystemProviderError, FileDeleteOptions, FileOpenOptions, File
 import { readFileIntoStream } from 'vs/platform/files/common/io';
 import { NodeJSFileWatcher } from 'vs/platform/files/node/watcher/nodejs/nodejsWatcher';
 import { ParcelWatcherClient } from 'vs/platform/files/node/watcher/parcel/parcelWatcherClient';
-import { AbstractRecursiveWatcher, IDiskFileChange, ILogMessage, IWatchRequest } from 'vs/platform/files/common/watcher';
+import { AbstractRecursiveWatcherClient, IDiskFileChange, ILogMessage, IWatchRequest } from 'vs/platform/files/common/watcher';
 import { ILogService } from 'vs/platform/log/common/log';
 import { AbstractDiskFileSystemProvider } from 'vs/platform/files/common/diskFileSystemProvider';
 import { toErrorMessage } from 'vs/base/common/errorMessage';
@@ -549,7 +549,7 @@ export class DiskFileSystemProvider extends AbstractDiskFileSystemProvider imple
 		onChange: (changes: IDiskFileChange[]) => void,
 		onLogMessage: (msg: ILogMessage) => void,
 		verboseLogging: boolean
-	): AbstractRecursiveWatcher {
+	): AbstractRecursiveWatcherClient {
 		return new ParcelWatcherClient(
 			changes => onChange(changes),
 			msg => onLogMessage(msg),
@@ -557,7 +557,7 @@ export class DiskFileSystemProvider extends AbstractDiskFileSystemProvider imple
 		);
 	}
 
-	protected override doWatch(watcher: AbstractRecursiveWatcher, requests: IWatchRequest[]): Promise<void> {
+	protected override doWatch(watcher: AbstractRecursiveWatcherClient, requests: IWatchRequest[]): Promise<void> {
 		const usePolling = this.options?.watcher?.usePolling;
 		if (usePolling === true) {
 			for (const request of requests) {
