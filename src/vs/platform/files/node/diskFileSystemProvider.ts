@@ -20,7 +20,7 @@ import { IDirent, Promises, RimRafMode, SymlinkSupport } from 'vs/base/node/pfs'
 import { localize } from 'vs/nls';
 import { createFileSystemProviderError, FileDeleteOptions, FileOpenOptions, FileOverwriteOptions, FileReadStreamOptions, FileSystemProviderCapabilities, FileSystemProviderError, FileSystemProviderErrorCode, FileType, FileWriteOptions, IFileSystemProviderWithFileFolderCopyCapability, IFileSystemProviderWithFileReadStreamCapability, IFileSystemProviderWithFileReadWriteCapability, IFileSystemProviderWithOpenReadWriteCloseCapability, isFileOpenForWriteOptions, IStat } from 'vs/platform/files/common/files';
 import { readFileIntoStream } from 'vs/platform/files/common/io';
-import { FileWatcher as NodeJSWatcherService } from 'vs/platform/files/node/watcher/nodejs/watcherService';
+import { NodeJSFileWatcher } from 'vs/platform/files/node/watcher/nodejs/nodejsWatcher';
 import { FileWatcher as ParcelWatcherService } from 'vs/platform/files/node/watcher/parcel/watcherService';
 import { AbstractWatcherService, IDiskFileChange, ILogMessage, IWatchRequest } from 'vs/platform/files/common/watcher';
 import { ILogService } from 'vs/platform/log/common/log';
@@ -580,7 +580,7 @@ export class DiskFileSystemProvider extends AbstractDiskFileSystemProvider imple
 		onLogMessage: (msg: ILogMessage) => void,
 		verboseLogging: boolean
 	): IDisposable & { setVerboseLogging: (verboseLogging: boolean) => void } {
-		return new NodeJSWatcherService(
+		return new NodeJSFileWatcher(
 			path,
 			changes => onChange(changes),
 			msg => onLogMessage(msg),
