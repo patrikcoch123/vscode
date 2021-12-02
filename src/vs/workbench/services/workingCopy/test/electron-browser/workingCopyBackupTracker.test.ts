@@ -78,7 +78,7 @@ flakySuite('WorkingCopyBackupTracker (native)', function () {
 		override dispose() {
 			super.dispose();
 
-			for (const [_, disposable] of this.pendingBackups) {
+			for (const [_, disposable] of this.pendingBackupOperations) {
 				disposable.dispose();
 			}
 		}

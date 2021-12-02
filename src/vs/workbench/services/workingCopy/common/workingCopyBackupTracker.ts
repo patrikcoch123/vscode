@@ -41,7 +41,9 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 		super();
 
 		// Fill in initial dirty working copies
-		this.workingCopyService.dirtyWorkingCopies.forEach(workingCopy => this.onDidRegister(workingCopy));
+		for (const workingCopy of this.workingCopyService.dirtyWorkingCopies) {
+			this.onDidRegister(workingCopy);
+		}
 
 		this.registerListeners();
 	}
@@ -69,8 +71,8 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 	// content has been made before closing.
 	private readonly mapWorkingCopyToContentVersion = new Map<IWorkingCopy, number>();
 
-	// A map of scheduled pending backups for working copies
-	protected readonly pendingBackups = new Map<IWorkingCopy, IDisposable>();
+	// A map of scheduled pending backup operations for working copies
+	protected readonly pendingBackupOperations = new Map<IWorkingCopy, IDisposable>();
 
 	// Delay creation of backups when content changes to avoid too much
 	// load on the backup service when the user is typing into the editor
@@ -127,7 +129,7 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 	private scheduleBackup(workingCopy: IWorkingCopy): void {
 
 		// Clear any running backup operation
-		this.cancelBackup(workingCopy);
+		this.cancelBackupOperation(workingCopy);
 
 		this.logService.trace(`[backup tracker] scheduling backup`, workingCopy.resource.toString(true), workingCopy.typeId);
 
@@ -158,22 +160,16 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 				}
 			}
 
-			if (cts.token.isCancellationRequested) {
-				// Return early and do not delete the pending
-				// backup: chances are that another pending
-				// backup was recorded and we don't want to
-				// tamper with that.
-				return;
+			// Clear disposable unless we got canceled which would
+			// indicate another operation has started meanwhile
+			if (!cts.token.isCancellationRequested) {
+				this.pendingBackupOperations.delete(workingCopy);
 			}
-
-			// Clear disposable
-			this.pendingBackups.delete(workingCopy);
-
 		}, this.getBackupScheduleDelay(workingCopy));
 
 		// Keep in map for disposal as needed
-		this.pendingBackups.set(workingCopy, toDisposable(() => {
-			this.logService.trace(`[backup tracker] clearing pending backup`, workingCopy.resource.toString(true), workingCopy.typeId);
+		this.pendingBackupOperations.set(workingCopy, toDisposable(() => {
+			this.logService.trace(`[backup tracker] clearing pending backup creation`, workingCopy.resource.toString(true), workingCopy.typeId);
 
 			cts.dispose(true);
 			clearTimeout(handle);
@@ -194,26 +190,48 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 	}
 
 	private discardBackup(workingCopy: IWorkingCopy): void {
-		this.logService.trace(`[backup tracker] discarding backup`, workingCopy.resource.toString(true), workingCopy.typeId);
 
 		// Clear any running backup operation
-		this.cancelBackup(workingCopy);
+		this.cancelBackupOperation(workingCopy);
 
-		// Forward to working copy backup service
-		this.workingCopyBackupService.discardBackup(workingCopy);
+		// Schedule backup discard asap
+		const cts = new CancellationTokenSource();
+		(async () => {
+			this.logService.trace(`[backup tracker] discarding backup`, workingCopy.resource.toString(true), workingCopy.typeId);
+
+			// Discard backup
+			try {
+				await this.workingCopyBackupService.discardBackup(workingCopy, cts.token);
+			} catch (error) {
+				this.logService.error(error);
+			}
+
+			// Clear disposable unless we got canceled which would
+			// indicate another operation has started meanwhile
+			if (!cts.token.isCancellationRequested) {
+				this.pendingBackupOperations.delete(workingCopy);
+			}
+		})();
+
+		// Keep in map for disposal as needed
+		this.pendingBackupOperations.set(workingCopy, toDisposable(() => {
+			this.logService.trace(`[backup tracker] clearing pending backup discard`, workingCopy.resource.toString(true), workingCopy.typeId);
+
+			cts.dispose(true);
+		}));
 	}
 
-	private cancelBackup(workingCopy: IWorkingCopy): void {
-		dispose(this.pendingBackups.get(workingCopy));
-		this.pendingBackups.delete(workingCopy);
+	private cancelBackupOperation(workingCopy: IWorkingCopy): void {
+		dispose(this.pendingBackupOperations.get(workingCopy));
+		this.pendingBackupOperations.delete(workingCopy);
 	}
 
-	protected cancelBackups(): void {
-		for (const [workingCopy] of this.pendingBackups) {
-			dispose(this.pendingBackups.get(workingCopy));
+	protected cancelBackupOperations(): void {
+		for (const [, disposable] of this.pendingBackupOperations) {
+			dispose(disposable);
 		}
 
-		this.pendingBackups.clear();
+		this.pendingBackupOperations.clear();
 	}
 
 	protected abstract onBeforeShutdown(reason: ShutdownReason): boolean | Promise<boolean>;
