@@ -539,24 +539,32 @@ suite('Async', () => {
 	});
 
 	suite('ResourceQueue', () => {
-		test('simple', function () {
+		test('simple', async function () {
 			let queue = new async.ResourceQueue();
+
+			await queue.whenDrained(); // returns immediately since empty
 
 			const r1Queue = queue.queueFor(URI.file('/some/path'));
 
-			r1Queue.onFinished(() => console.log('DONE'));
+			await queue.whenDrained(); // returns immediately since empty
 
 			const r2Queue = queue.queueFor(URI.file('/some/other/path'));
+
+			await queue.whenDrained(); // returns immediately since empty
 
 			assert.ok(r1Queue);
 			assert.ok(r2Queue);
 			assert.strictEqual(r1Queue, queue.queueFor(URI.file('/some/path'))); // same queue returned
 
-			let syncPromiseFactory = () => Promise.resolve(undefined);
+			// schedule some work
+			r1Queue.queue(() => Promise.resolve(undefined));
 
-			r1Queue.queue(syncPromiseFactory);
+			let drained = false;
+			queue.whenDrained().then(() => drained = true);
 
-			return new Promise<void>(c => setTimeout(() => c(), 0)).then(() => {
+			return async.timeout(0).then(() => {
+				assert.strictEqual(drained, true);
+
 				const r1Queue2 = queue.queueFor(URI.file('/some/path'));
 				assert.notStrictEqual(r1Queue, r1Queue2); // previous one got disposed after finishing
 			});

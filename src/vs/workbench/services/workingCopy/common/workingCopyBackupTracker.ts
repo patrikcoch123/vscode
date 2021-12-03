@@ -56,11 +56,25 @@ export abstract class WorkingCopyBackupTracker extends Disposable {
 		this._register(this.workingCopyService.onDidChangeDirty(workingCopy => this.onDidChangeDirty(workingCopy)));
 		this._register(this.workingCopyService.onDidChangeContent(workingCopy => this.onDidChangeContent(workingCopy)));
 
-		// Lifecycle (handled in subclasses)
+		// Lifecycle
 		this.lifecycleService.onBeforeShutdown(event => event.veto(this.onBeforeShutdown(event.reason), 'veto.backups'));
+		this.lifecycleService.onWillShutdown(() => this.onWillShutdown());
 
 		// Once a handler registers, restore backups
 		this._register(this.workingCopyEditorService.onDidRegisterHandler(handler => this.restoreBackups(handler)));
+	}
+
+	private onWillShutdown(): void {
+
+		// Here we know that we will shutdown. Any backup operation that is
+		// already scheduled or being scheduled from this moment on runs
+		// at the risk of corrupting a backup because the backup operation
+		// might terminate at any given time now. As such, we need to disable
+		// this tracker from performing more backups by cancelling pending
+		// operations and disposing our listeners.
+
+		this.cancelBackupOperations();
+		this.dispose();
 	}
 
 

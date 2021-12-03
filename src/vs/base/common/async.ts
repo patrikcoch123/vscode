@@ -596,6 +596,29 @@ export class ResourceQueue implements IDisposable {
 
 	private readonly queues = new Map<string, Queue<void>>();
 
+	private readonly drainers = new Set<DeferredPromise<void>>();
+
+	async whenDrained(): Promise<void> {
+		if (this.isDrained()) {
+			return;
+		}
+
+		const promise = new DeferredPromise<void>();
+		this.drainers.add(promise);
+
+		return promise.p;
+	}
+
+	private isDrained(): boolean {
+		for (const [, queue] of this.queues) {
+			if (queue.size > 0) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	queueFor(resource: URI, extUri: IExtUri = defaultExtUri): Queue<void> {
 		const key = extUri.getComparisonKey(resource);
 
@@ -605,6 +628,7 @@ export class ResourceQueue implements IDisposable {
 			Event.once(queue.onFinished)(() => {
 				queue?.dispose();
 				this.queues.delete(key);
+				this.onDidQueueChange();
 			});
 
 			this.queues.set(key, queue);
@@ -613,9 +637,23 @@ export class ResourceQueue implements IDisposable {
 		return queue;
 	}
 
+	private onDidQueueChange(): void {
+		if (!this.isDrained()) {
+			return; // not done yet
+		}
+
+		for (const drainer of this.drainers) {
+			drainer.complete();
+		}
+
+		this.drainers.clear();
+	}
+
 	dispose(): void {
 		this.queues.forEach(queue => queue.dispose());
 		this.queues.clear();
+
+		this.onDidQueueChange();
 	}
 }
 
@@ -1408,7 +1446,7 @@ export class AsyncIterableObject<T> implements AsyncIterable<T> {
 	public static merge<T>(iterables: AsyncIterable<T>[]): AsyncIterableObject<T> {
 		return new AsyncIterableObject(async (emitter) => {
 			await Promise.all(iterables.map(async (iterable) => {
-				for await(const item of iterable) {
+				for await (const item of iterable) {
 					emitter.emitOne(item);
 				}
 			}));
@@ -1469,7 +1507,7 @@ export class AsyncIterableObject<T> implements AsyncIterable<T> {
 
 	public static map<T, R>(iterable: AsyncIterable<T>, mapFn: (item: T) => R): AsyncIterableObject<R> {
 		return new AsyncIterableObject<R>(async (emitter) => {
-			for await(const item of iterable) {
+			for await (const item of iterable) {
 				emitter.emitOne(mapFn(item));
 			}
 		});
@@ -1481,7 +1519,7 @@ export class AsyncIterableObject<T> implements AsyncIterable<T> {
 
 	public static filter<T>(iterable: AsyncIterable<T>, filterFn: (item: T) => boolean): AsyncIterableObject<T> {
 		return new AsyncIterableObject<T>(async (emitter) => {
-			for await(const item of iterable) {
+			for await (const item of iterable) {
 				if (filterFn(item)) {
 					emitter.emitOne(item);
 				}
