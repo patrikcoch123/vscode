@@ -3,20 +3,16 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { localize } from 'vs/nls';
-import { toErrorMessage } from 'vs/base/common/errorMessage';
 import { handleVetos } from 'vs/platform/lifecycle/common/lifecycle';
 import { ShutdownReason, ILifecycleService } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ipcRenderer } from 'vs/base/parts/sandbox/electron-sandbox/globals';
 import { ILogService } from 'vs/platform/log/common/log';
-import { INotificationService } from 'vs/platform/notification/common/notification';
-import { onUnexpectedError } from 'vs/base/common/errors';
 import { AbstractLifecycleService } from 'vs/workbench/services/lifecycle/common/lifecycleService';
 import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import Severity from 'vs/base/common/severity';
 import { INativeHostService } from 'vs/platform/native/electron-sandbox/native';
 import { Promises, disposableTimeout } from 'vs/base/common/async';
+import { toErrorMessage } from 'vs/base/common/errorMessage';
 
 export class NativeLifecycleService extends AbstractLifecycleService {
 
@@ -24,7 +20,6 @@ export class NativeLifecycleService extends AbstractLifecycleService {
 	private static readonly WILL_SHUTDOWN_WARNING_DELAY = 5000;
 
 	constructor(
-		@INotificationService private readonly notificationService: INotificationService,
 		@INativeHostService private readonly nativeHostService: INativeHostService,
 		@IStorageService storageService: IStorageService,
 		@ILogService logService: ILogService
@@ -103,7 +98,11 @@ export class NativeLifecycleService extends AbstractLifecycleService {
 		}, NativeLifecycleService.BEFORE_SHUTDOWN_WARNING_DELAY);
 
 		try {
-			return await handleVetos(vetos, error => this.onShutdownError(reason, error));
+			return await handleVetos(vetos, error => {
+				this.logService.error(`[lifecycle]: Error during before-shutdown phase (error: ${toErrorMessage(error)})`);
+
+				this._onBeforeShutdownError.fire({ reason, error });
+			});
 		} finally {
 			longRunningBeforeShutdownWarning.dispose();
 		}
@@ -131,36 +130,10 @@ export class NativeLifecycleService extends AbstractLifecycleService {
 		try {
 			await Promises.settled(joiners);
 		} catch (error) {
-			this.onShutdownError(reason, error);
+			this.logService.error(`[lifecycle]: Error during will-shutdown phase (error: ${toErrorMessage(error)})`); // this error will not prevent the shutdown
 		} finally {
 			longRunningWillShutdownWarning.dispose();
 		}
-	}
-
-	private onShutdownError(reason: ShutdownReason, error: Error): void {
-		let message: string;
-		switch (reason) {
-			case ShutdownReason.CLOSE:
-				message = localize('errorClose', "An unexpected error was thrown while attempting to close the window ({0}).", toErrorMessage(error));
-				break;
-			case ShutdownReason.QUIT:
-				message = localize('errorQuit', "An unexpected error was thrown while attempting to quit the application ({0}).", toErrorMessage(error));
-				break;
-			case ShutdownReason.RELOAD:
-				message = localize('errorReload', "An unexpected error was thrown while attempting to reload the window ({0}).", toErrorMessage(error));
-				break;
-			case ShutdownReason.LOAD:
-				message = localize('errorLoad', "An unexpected error was thrown while attempting to change the workspace of the window ({0}).", toErrorMessage(error));
-				break;
-		}
-
-		this.notificationService.notify({
-			severity: Severity.Error,
-			message,
-			sticky: true
-		});
-
-		onUnexpectedError(error);
 	}
 
 	shutdown(): Promise<void> {
