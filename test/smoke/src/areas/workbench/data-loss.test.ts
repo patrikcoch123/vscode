@@ -46,7 +46,7 @@ export function setup(opts: ParsedArgs) {
 			return testHotExit.call(this, 2000);
 		});
 
-		it.only('verifies that auto save triggers on shutdown', function () {
+		it('verifies that auto save triggers on shutdown', function () {
 			return testHotExit.call(this, undefined, true);
 		});
 

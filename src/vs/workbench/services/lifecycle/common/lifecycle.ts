@@ -34,6 +34,18 @@ export interface BeforeShutdownEvent {
 	readonly reason: ShutdownReason;
 }
 
+export interface InternalBeforeShutdownEvent extends BeforeShutdownEvent {
+
+	/**
+	 * Allows to set a veto operation to run after all other
+	 * vetos have been handled from the `BeforeShutdownEvent`
+	 *
+	 * This method is hidden from the API because it is intended
+	 * to be only used internally once.
+	 */
+	finalVeto(vetoFn: () => boolean | Promise<boolean>, id: string): void;
+}
+
 /**
  * An event that signals an error happened during `onBeforeShutdown` veto handling.
  * In this case the shutdown operation will not proceed because this is an unexpected
